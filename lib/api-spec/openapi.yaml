@@ -1,0 +1,619 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: ENERGUM Supplement Store API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: products
+    description: Product management
+  - name: orders
+    description: Order management
+  - name: coupons
+    description: Coupon management
+  - name: promotions
+    description: Promotions and countdown timers
+  - name: reviews
+    description: Product reviews
+  - name: stats
+    description: Store statistics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /products:
+    get:
+      operationId: getProducts
+      tags: [products]
+      summary: List all products
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+          required: false
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductBody"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a single product
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/{id}/reviews:
+    get:
+      operationId: getProductReviews
+      tags: [reviews]
+      summary: Get reviews for a product
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Create a review for a product
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReviewBody"
+      responses:
+        "201":
+          description: Created review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  /orders:
+    get:
+      operationId: getOrders
+      tags: [orders]
+      summary: List orders
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get a single order
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /coupons/validate:
+    post:
+      operationId: validateCoupon
+      tags: [coupons]
+      summary: Validate a coupon code and get discount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateCouponBody"
+      responses:
+        "200":
+          description: Coupon details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coupon"
+        "400":
+          description: Invalid or expired coupon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /promotions/active:
+    get:
+      operationId: getActivePromotion
+      tags: [promotions]
+      summary: Get active promotion with countdown timer
+      responses:
+        "200":
+          description: Active promotion with end time
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Promotion"
+        "404":
+          description: No active promotion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats/store:
+    get:
+      operationId: getStoreStats
+      tags: [stats]
+      summary: Get store summary statistics
+      responses:
+        "200":
+          description: Store stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: ["number", "null"]
+        category:
+          type: string
+        imageUrl:
+          type: string
+        imageUrl2:
+          type: ["string", "null"]
+        imageUrl3:
+          type: ["string", "null"]
+        benefits:
+          type: array
+          items:
+            type: string
+        ingredients:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        stock:
+          type: integer
+        averageRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - slug
+        - description
+        - shortDescription
+        - price
+        - category
+        - imageUrl
+        - benefits
+        - quantity
+        - isActive
+        - isFeatured
+        - stock
+        - reviewCount
+        - createdAt
+
+    CreateProductBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: ["number", "null"]
+        category:
+          type: string
+        imageUrl:
+          type: string
+        benefits:
+          type: array
+          items:
+            type: string
+        ingredients:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        isFeatured:
+          type: boolean
+        stock:
+          type: integer
+      required:
+        - name
+        - slug
+        - description
+        - shortDescription
+        - price
+        - category
+        - imageUrl
+        - benefits
+        - quantity
+        - stock
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        authorName:
+          type: string
+        rating:
+          type: integer
+        comment:
+          type: string
+        verifiedPurchase:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - productId
+        - authorName
+        - rating
+        - comment
+        - verifiedPurchase
+        - createdAt
+
+    CreateReviewBody:
+      type: object
+      properties:
+        authorName:
+          type: string
+        rating:
+          type: integer
+        comment:
+          type: string
+      required:
+        - authorName
+        - rating
+        - comment
+
+    OrderItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+        productName:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        totalPrice:
+          type: number
+      required:
+        - productId
+        - productName
+        - quantity
+        - unitPrice
+        - totalPrice
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        shippingAddress:
+          type: string
+        status:
+          type: string
+        subtotal:
+          type: number
+        discountAmount:
+          type: number
+        total:
+          type: number
+        couponCode:
+          type: ["string", "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        createdAt:
+          type: string
+      required:
+        - id
+        - customerName
+        - customerEmail
+        - customerPhone
+        - shippingAddress
+        - status
+        - subtotal
+        - discountAmount
+        - total
+        - items
+        - createdAt
+
+    CreateOrderBody:
+      type: object
+      properties:
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        shippingAddress:
+          type: string
+        couponCode:
+          type: ["string", "null"]
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: integer
+              quantity:
+                type: integer
+            required:
+              - productId
+              - quantity
+      required:
+        - customerName
+        - customerEmail
+        - customerPhone
+        - shippingAddress
+        - items
+
+    ValidateCouponBody:
+      type: object
+      properties:
+        code:
+          type: string
+        orderTotal:
+          type: number
+      required:
+        - code
+        - orderTotal
+
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        discountType:
+          type: string
+        discountValue:
+          type: number
+        minimumOrder:
+          type: ["number", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        discountAmount:
+          type: number
+        isValid:
+          type: boolean
+      required:
+        - id
+        - code
+        - discountType
+        - discountValue
+        - discountAmount
+        - isValid
+
+    Promotion:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        endsAt:
+          type: string
+        discountPercentage:
+          type: ["integer", "null"]
+        bannerText:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - id
+        - title
+        - description
+        - endsAt
+        - bannerText
+        - isActive
+
+    StoreStats:
+      type: object
+      properties:
+        totalProducts:
+          type: integer
+        totalOrders:
+          type: integer
+        totalRevenue:
+          type: number
+        satisfiedCustomers:
+          type: integer
+        averageRating:
+          type: number
+        guaranteeDays:
+          type: integer
+      required:
+        - totalProducts
+        - totalOrders
+        - totalRevenue
+        - satisfiedCustomers
+        - averageRating
+        - guaranteeDays
